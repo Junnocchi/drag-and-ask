@@ -64,7 +64,11 @@ private struct WebContent: NSViewRepresentable {
         <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
         <style>
         :root { color-scheme: light dark; }
-        html, body { margin: 0; padding: 0; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;   /* WebView height matches body; we never need to scroll the page itself */
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             font-size: 14px;
@@ -74,6 +78,20 @@ private struct WebContent: NSViewRepresentable {
             word-wrap: break-word;
             overflow-wrap: anywhere;
             -webkit-text-size-adjust: 100%;
+        }
+
+        /* Thin auto-hiding scrollbars for the only elements that can overflow horizontally:
+           code blocks, tables, KaTeX displays. Invisible by default, visible on hover. */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; transition: background 0.15s ease; }
+        pre:hover::-webkit-scrollbar-thumb,
+        table:hover::-webkit-scrollbar-thumb,
+        .katex-display:hover::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.45); }
+        @media (prefers-color-scheme: dark) {
+            pre:hover::-webkit-scrollbar-thumb,
+            table:hover::-webkit-scrollbar-thumb,
+            .katex-display:hover::-webkit-scrollbar-thumb { background: rgba(220, 220, 220, 0.35); }
         }
         @media (prefers-color-scheme: dark) {
             body { color: #ececec; }
