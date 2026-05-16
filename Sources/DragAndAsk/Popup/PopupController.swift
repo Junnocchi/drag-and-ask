@@ -22,25 +22,26 @@ final class PopupController {
     private func ensurePanel() {
         if panel != nil { return }
         let p = FloatingPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 500),
-            styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel, .resizable],
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 540),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
         p.titleVisibility = .hidden
         p.titlebarAppearsTransparent = true
         p.isMovableByWindowBackground = true
+        // Keep above other apps by default, but allow fullscreen + free resize.
         p.level = .floating
         p.hidesOnDeactivate = false
         p.isFloatingPanel = true
         p.becomesKeyOnlyIfNeeded = false
-        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        p.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        p.standardWindowButton(.zoomButton)?.isHidden = true
+        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenPrimary]
+        p.minSize = NSSize(width: 320, height: 280)
         p.standardWindowButton(.closeButton)?.target = self
         p.standardWindowButton(.closeButton)?.action = #selector(handleClose)
 
         let host = NSHostingController(rootView: PopupView(vm: viewModel, onClose: { [weak self] in self?.hide() }))
+        host.sizingOptions = []  // don't let SwiftUI shrink/grow the window
         p.contentViewController = host
         panel = p
     }
@@ -63,5 +64,5 @@ final class PopupController {
 /// Necessary so the ESC key handler and the follow-up text field receive events.
 final class FloatingPanel: NSPanel {
     override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { false }
+    override var canBecomeMain: Bool { true }
 }

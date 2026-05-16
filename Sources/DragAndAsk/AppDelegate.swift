@@ -63,8 +63,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func resetAllConversations() {
         Task {
             await ConversationStore.shared.resetAll()
+            await CLISessionStore.shared.clearAll()
         }
     }
+    // Note: both stores already have a resetAll() that wipes across all providers.
 
     @MainActor
     private func runCapturePipeline() async {

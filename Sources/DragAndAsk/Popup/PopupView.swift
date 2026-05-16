@@ -16,36 +16,72 @@ struct PopupView: View {
             Divider()
             followUpBar
         }
-        .frame(width: 680)
-        .frame(minHeight: 420, maxHeight: 760)
+        .frame(minWidth: 320, minHeight: 280)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.regularMaterial)
         .background(KeyCatcher(onEscape: onClose))
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "text.book.closed")
-            Text(vm.sourceFile.isEmpty ? "drag & ask" : vm.sourceFile)
-                .font(.headline)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            if vm.userTurnCount > 0 {
-                Text("· \(vm.userTurnCount)개 질문")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            if !vm.turns.isEmpty {
-                Button {
-                    vm.resetConversation()
-                } label: {
-                    Label("새 대화", systemImage: "arrow.counterclockwise")
-                        .font(.caption)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Image(systemName: "text.book.closed")
+                Text(vm.sourceFile.isEmpty ? "drag & ask" : vm.sourceFile)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+                if !vm.turns.isEmpty {
+                    Button {
+                        vm.resetConversation()
+                    } label: {
+                        Label("새 대화", systemImage: "arrow.counterclockwise")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("이 논문의 대화 기록을 지웁니다")
                 }
-                .buttonStyle(.borderless)
-                .help("이 논문의 대화 기록을 지웁니다")
+                Text("ESC로 닫기").font(.caption2).foregroundStyle(.secondary)
             }
-            Text("ESC로 닫기").font(.caption2).foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                Text(AIService.currentProvider.displayName)
+                Text("·")
+                Text(AIService.currentModel)
+                    .font(.system(.caption, design: .monospaced))
+                if vm.userTurnCount > 0 {
+                    Text("·")
+                    Text("\(vm.userTurnCount)개 질문")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            HStack(spacing: 6) {
+                Image(systemName: "gauge.with.dots.needle.50percent")
+                let provider = AIService.currentProvider
+                if let q = vm.quota, vm.quotaProvider == provider {
+                    Text(QuotaFormat.short(q))
+                } else if provider == .gemini {
+                    Text("Gemini는 헤드리스 quota 노출 없음")
+                } else {
+                    Text("quota 아직 미수집 — 새로고침")
+                }
+                if provider != .gemini {
+                    if vm.quotaRefreshing {
+                        ProgressView().controlSize(.mini)
+                    } else {
+                        Button {
+                            vm.refreshQuota(for: provider)
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .buttonStyle(.borderless)
+                        .help(provider == .codex ? "Codex quota 조회 (약 5초)" : "Claude quota 조회 (약 20초)")
+                    }
+                }
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -123,14 +159,14 @@ struct TurnBubble: View {
         HStack(alignment: .top, spacing: 0) {
             switch turn.kind {
             case .userSelection:
-                Spacer(minLength: 60)
+                Spacer(minLength: 20)
                 userSelectionBubble
             case .userQuestion:
-                Spacer(minLength: 60)
+                Spacer(minLength: 20)
                 userQuestionBubble
             case .modelReply:
-                modelBubble(content: AnyView(MarkdownText(turn.text).textSelection(.enabled)))
-                Spacer(minLength: 40)
+                modelBubble(content: AnyView(RichResponseView(raw: turn.text)))
+                Spacer(minLength: 16)
             case .modelLoading:
                 modelBubble(content: AnyView(
                     HStack(spacing: 6) {
@@ -138,7 +174,7 @@ struct TurnBubble: View {
                         Text("분석 중…").foregroundStyle(.secondary)
                     }
                 ))
-                Spacer(minLength: 40)
+                Spacer(minLength: 16)
             case .modelError(let message):
                 modelBubble(content: AnyView(
                     Label(message, systemImage: "exclamationmark.triangle.fill")
@@ -146,7 +182,7 @@ struct TurnBubble: View {
                         .font(.callout)
                         .textSelection(.enabled)
                 ))
-                Spacer(minLength: 40)
+                Spacer(minLength: 16)
             }
         }
     }
@@ -181,7 +217,7 @@ struct TurnBubble: View {
 
     private func modelBubble(content: AnyView) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("Gemini", systemImage: "sparkles")
+            Label(AIService.currentProvider.displayName, systemImage: "sparkles")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             content
