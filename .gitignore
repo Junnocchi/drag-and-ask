@@ -1,0 +1,29 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Our build outputs
+build/
+dist/
+*.app
+*.icns
+*.zip
+
+# Xcode (in case someone opens it that way)
+*.xcodeproj/
+xcuserdata/
+DerivedData/
+
+# macOS
+.DS_Store
+
+# Editor cruft
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local test files
+*.pdf
+!docs/**/*.pdf
